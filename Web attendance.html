@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Location-Based Attendance</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    @media screen and (max-width: 480px) {
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Attendance Form</h2>
+    <form id="attendance-form">
+      <input type="text" id="name" placeholder="CL-86017" required>
+      <button type="submit">Submit Attendance</button>
+    </form>
+    <p id="status"></p>
+  </div>
+
+  <script>
+    const form = document.getElementById('attendance-form');
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      document.getElementById('status').innerText = "Fetching location...";
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(success, error);
+      } else {
+        document.getElementById('status').innerText = "Geolocation is not supported by your browser.";
+      }
+
+      function success(position) {
+        const name = document.getElementById('name').value;
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        fetch('https://script.google.com/macros/s/AKfycbwgYihKBi2zYZOGZk-o5YKmfRX797eyyjAzZQCWcgm9nHLQ76g6p7NO38SEA3Cf71-u5A/exec', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `name=${encodeURIComponent(name)}&latitude=${latitude}&longitude=${longitude}`
+        })
+        .then(response => response.text())
+        .then(result => {
+          document.getElementById('status').innerText = "✅ Attendance submitted!";
+        })
+        .catch(error => {
+          document.getElementById('status').innerText = "❌ Error submitting attendance.";
+          console.error(error);
+        });
+      }
+
+      function error(err) {
+        document.getElementById('status').innerText = "❌ Location access denied or unavailable.";
+      }
+    });
+  </script>
+
+</body>
+</html>
+
