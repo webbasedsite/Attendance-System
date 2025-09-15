@@ -2,122 +2,217 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>Daily Attendance</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Location-Based Attendance</title>
   <style>
+    /* --- Better styling --- */
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f4f6f8;
+      font-family: 'Segoe UI', sans-serif;
+      background: #eef2f5;
+      margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      margin: 0;
     }
-
     .container {
-      background: #fff;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
       padding: 30px 40px;
-      border-radius: 10px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      width: 90%;
-      max-width: 400px;
+      max-width: 420px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 30px;
       text-align: center;
+      color: #222;
     }
-
-    h2 {
-      color: #333;
-      margin-bottom: 20px;
+    h1::after {
+      content: '';
+      display: block;
+      width: 80px;
+      height: 4px;
+      background: #ffda03;
+      margin: 8px auto 0;
+      border-radius: 4px;
     }
-
-    input[type="text"] {
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #444;
+    }
+    input, select {
       width: 100%;
       padding: 12px;
-      margin: 10px 0;
+      border-radius: 8px;
       border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
     }
-
-    button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 12px 20px;
+    .buttons-row {
+      display: flex;
+      gap: 12px;
+    }
+    .buttons-row button {
+      flex: 1;
+      padding: 12px;
       border: none;
-      border-radius: 5px;
-      font-size: 16px;
+      border-radius: 8px;
+      background: #ffda03;
+      font-weight: 600;
+      font-size: 15px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: background 0.3s ease;
     }
-
-    button:hover {
-      background-color: #45a049;
+    .buttons-row button:hover {
+      background: #e6c000;
     }
-
+    .history-btn {
+      margin-top: 25px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #ddd;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .history-btn:hover {
+      background: #ccc;
+    }
     #status {
-      margin-top: 15px;
-      font-weight: bold;
-      color: #555;
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #444;
+      white-space: pre-wrap;
+      min-height: 22px;
     }
-
-    @media screen and (max-width: 480px) {
-      .container {
-        padding: 20px;
-      }
+    #history {
+      margin-top: 20px;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
-
   <div class="container">
-    <h2>Attendance Form</h2>
+    <h1>📋 Daily Attendance</h1>
     <form id="attendance-form">
-      <input type="text" id="name" placeholder="CL-86017" required>
-      <button type="submit">Submit Attendance</button>
+      <label for="name">Employee ID</label>
+      <input type="text" id="name" placeholder="e.g. CL-86017" required>
+
+      <label for="shift">Shift</label>
+      <select id="shift" required>
+        <option value="">-- Select Shift --</option>
+        <option value="Morning">Morning</option>
+        <option value="Evening">Evening</option>
+        <option value="Night">Night</option>
+      </select>
+
+      <div class="buttons-row">
+        <button type="button" onclick="handleSubmit('Check-in')">✅ Check In</button>
+        <button type="button" onclick="handleSubmit('Check-out')">📤 Check Out</button>
+      </div>
     </form>
-    <p id="status"></p>
+
+    <button class="history-btn" onclick="loadHistory()">📖 View History</button>
+
+    <div id="status"></div>
+    <div id="history"></div>
   </div>
 
   <script>
-    const form = document.getElementById('attendance-form');
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      document.getElementById('status').innerText = "Fetching location...";
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbzGJAni-zu2mBNLjWPJIvY3Vydk5abrq1lnDF5akgx5eyzUSSJL9Ea46uToMIttFyxFVA/exec"; // Replace with your deployed Apps Script URL
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(success, error);
-      } else {
-        document.getElementById('status').innerText = "Geolocation is not supported by your browser.";
+    function handleSubmit(action) {
+      const name = document.getElementById("name").value.trim();
+      const shift = document.getElementById("shift").value;
+      const statusDiv = document.getElementById("status");
+
+      if (!name || !shift) {
+        statusDiv.innerText = "❗ Please fill in all fields.";
+        statusDiv.style.color = "red";
+        return;
       }
 
-      function success(position) {
-        const name = document.getElementById('name').value;
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
+      statusDiv.innerText = "📡 Getting location...";
+      statusDiv.style.color = "#444";
 
-        fetch('https://script.google.com/macros/s/AKfycbwgYihKBi2zYZOGZk-o5YKmfRX797eyyjAzZQCWcgm9nHLQ76g6p7NO38SEA3Cf71-u5A/exec', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: `name=${encodeURIComponent(name)}&latitude=${latitude}&longitude=${longitude}`
-        })
-        .then(response => response.text())
-        .then(result => {
-          document.getElementById('status').innerText = "✅ Attendance submitted!";
-        })
-        .catch(error => {
-          document.getElementById('status').innerText = "❌ Error submitting attendance.";
-          console.error(error);
+      if (!navigator.geolocation) {
+        statusDiv.innerText = "❌ Geolocation is not supported.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        const params = new URLSearchParams({
+          name: name,
+          shift: shift,
+          latitude: lat,
+          longitude: lng,
+          action: action
         });
+
+        fetch(webAppUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params.toString()
+        })
+        .then(res => res.text())
+        .then(txt => {
+          statusDiv.innerText = txt;
+          statusDiv.style.color = txt.startsWith("✅") ? "green" : "red";
+        })
+        .catch(err => {
+          statusDiv.innerText = "❌ Network error: " + err.message;
+          statusDiv.style.color = "red";
+        });
+      }, err => {
+        statusDiv.innerText = "❌ Location permission denied or unavailable.";
+        statusDiv.style.color = "red";
+      });
+    }
+
+    function loadHistory() {
+      const name = document.getElementById("name").value.trim();
+      const historyDiv = document.getElementById("history");
+
+      if (!name) {
+        historyDiv.innerHTML = "<p style='color:red;'>⚠ Please enter Employee ID first.</p>";
+        return;
       }
 
-      function error(err) {
-        document.getElementById('status').innerText = "❌ Location access denied or unavailable.";
-      }
-    });
+      historyDiv.innerHTML = "⏳ Loading history...";
+
+      fetch(`${webAppUrl}?action=history&name=${encodeURIComponent(name)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data || data.length === 0) {
+            historyDiv.innerHTML = "<p>No history found.</p>";
+            return;
+          }
+          let html = "<table style='width:100%; border-collapse: collapse; margin-top:10px;'><thead><tr><th style='border-bottom:1px solid #ccc; text-align:left;'>Date & Time</th><th style='border-bottom:1px solid #ccc;'>Action</th><th style='border-bottom:1px solid #ccc;'>Status</th></tr></thead><tbody>";
+          data.forEach(it => {
+            html += `<tr>
+              <td>${it.timestamp}</td>
+              <td>${it.action}</td>
+              <td>${it.status}</td>
+            </tr>`;
+          });
+          html += "</tbody></table>";
+          historyDiv.innerHTML = html;
+        })
+        .catch(err => {
+          historyDiv.innerHTML = `<p style='color:red;'>❌ Failed to load history: ${err.message}</p>`;
+        });
+    }
   </script>
-
 </body>
 </html>
-
