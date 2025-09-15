@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Daily Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* --- Better styling --- */
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #eef2f5;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      padding: 30px 40px;
+      max-width: 420px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 30px;
+      text-align: center;
+      color: #222;
+    }
+    h1::after {
+      content: '';
+      display: block;
+      width: 80px;
+      height: 4px;
+      background: #ffda03;
+      margin: 8px auto 0;
+      border-radius: 4px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #444;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .buttons-row {
+      display: flex;
+      gap: 12px;
+    }
+    .buttons-row button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #ffda03;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .buttons-row button:hover {
+      background: #e6c000;
+    }
+    .history-btn {
+      margin-top: 25px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #ddd;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .history-btn:hover {
+      background: #ccc;
+    }
+    #status {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #444;
+      white-space: pre-wrap;
+      min-height: 22px;
+    }
+    #history {
+      margin-top: 20px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📋 Daily Attendance</h1>
+    <form id="attendance-form">
+      <label for="name">Employee ID</label>
+      <input type="text" id="name" placeholder="e.g. CL-86017" required>
+
+      <label for="shift">Shift</label>
+      <select id="shift" required>
+        <option value="">-- Select Shift --</option>
+        <option value="Morning">Morning</option>
+        <option value="Evening">Evening</option>
+        <option value="Night">Night</option>
+      </select>
+
+      <div class="buttons-row">
+        <button type="button" onclick="handleSubmit('Check-in')">✅ Check In</button>
+        <button type="button" onclick="handleSubmit('Check-out')">📤 Check Out</button>
+      </div>
+    </form>
+
+    <button class="history-btn" onclick="loadHistory()">📖 View History</button>
+
+    <div id="status"></div>
+    <div id="history"></div>
+  </div>
+
+  <script>
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbzGJAni-zu2mBNLjWPJIvY3Vydk5abrq1lnDF5akgx5eyzUSSJL9Ea46uToMIttFyxFVA/exec"; // Replace with your deployed Apps Script URL
+
+    function handleSubmit(action) {
+      const name = document.getElementById("name").value.trim();
+      const shift = document.getElementById("shift").value;
+      const statusDiv = document.getElementById("status");
+
+      if (!name || !shift) {
+        statusDiv.innerText = "❗ Please fill in all fields.";
+        statusDiv.style.color = "red";
+        return;
+      }
+
+      statusDiv.innerText = "📡 Getting location...";
+      statusDiv.style.color = "#444";
+
+      if (!navigator.geolocation) {
+        statusDiv.innerText = "❌ Geolocation is not supported.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        const params = new URLSearchParams({
+          name: name,
+          shift: shift,
+          latitude: lat,
+          longitude: lng,
+          action: action
+        });
+
+        fetch(webAppUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params.toString()
+        })
+        .then(res => res.text())
+        .then(txt => {
+          statusDiv.innerText = txt;
+          statusDiv.style.color = txt.startsWith("✅") ? "green" : "red";
+        })
+        .catch(err => {
+          statusDiv.innerText = "❌ Network error: " + err.message;
+          statusDiv.style.color = "red";
+        });
+      }, err => {
+        statusDiv.innerText = "❌ Location permission denied or unavailable.";
+        statusDiv.style.color = "red";
+      });
+    }
+
+    function loadHistory() {
+      const name = document.getElementById("name").value.trim();
+      const historyDiv = document.getElementById("history");
+
+      if (!name) {
+        historyDiv.innerHTML = "<p style='color:red;'>⚠ Please enter Employee ID first.</p>";
+        return;
+      }
+
+      historyDiv.innerHTML = "⏳ Loading history...";
+
+      fetch(`${webAppUrl}?action=history&name=${encodeURIComponent(name)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data || data.length === 0) {
+            historyDiv.innerHTML = "<p>No history found.</p>";
+            return;
+          }
+          let html = "<table style='width:100%; border-collapse: collapse; margin-top:10px;'><thead><tr><th style='border-bottom:1px solid #ccc; text-align:left;'>Date & Time</th><th style='border-bottom:1px solid #ccc;'>Action</th><th style='border-bottom:1px solid #ccc;'>Status</th></tr></thead><tbody>";
+          data.forEach(it => {
+            html += `<tr>
+              <td>${it.timestamp}</td>
+              <td>${it.action}</td>
+              <td>${it.status}</td>
+            </tr>`;
+          });
+          html += "</tbody></table>";
+          historyDiv.innerHTML = html;
+        })
+        .catch(err => {
+          historyDiv.innerHTML = `<p style='color:red;'>❌ Failed to load history: ${err.message}</p>`;
+        });
+    }
+  </script>
+</body>
+</html>
