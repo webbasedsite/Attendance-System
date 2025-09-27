@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Add Employee</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      background: #f4f7fc;
+      color: #333;
+      padding: 20px;
+    }
+    header {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #007bff;
+      border-bottom: 3px solid #007bff;
+      padding-bottom: 12px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    section {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      padding: 25px 30px;
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0,123,255,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      color: #007bff;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      margin-right: 10px;
+      color: #007bff;
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+    select, input[type="text"], input[type="password"] {
+      padding: 8px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1.5px solid #007bff;
+      outline: none;
+      margin-bottom: 20px;
+      min-width: 200px;
+      display: block;
+    }
+    select:focus, input[type="text"]:focus, input[type="password"]:focus {
+      border-color: #0056b3;
+      box-shadow: 0 0 8px rgba(0,86,179,0.5);
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 25px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,123,255,0.5);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    button:hover {
+      background: #0056b3;
+      box-shadow: 0 6px 18px rgba(0,86,179,0.8);
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+      min-height: 1.2em;
+      color: #d8000c;
+      text-align: center;
+    }
+    /* Back button specific styles */
+    button.back-btn {
+      display: block;
+      margin: 20px auto 0 auto;
+      padding: 12px 20px;
+      box-shadow: 0 6px 18px rgba(0,123,255,0.4);
+      background: #007bff;
+      color: white;
+      border-radius: 8px;
+      border: none;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    button.back-btn:hover {
+      background: #0056b3;
+      box-shadow: 0 6px 18px rgba(0,86,179,0.8);
+    }
+  </style>
+</head>
+<body>
+
+  <header>Add New Employee</header>
+
+  <section>
+    <form id="addEmployeeForm">
+      <label for="officeSelect">Select Office: <span style="color:red">*</span></label>
+      <select id="officeSelect" name="office" required>
+        <option value="">Loading offices...</option>
+      </select>
+
+      <label for="nameInput">Name: <span style="color:red">*</span></label>
+      <input type="text" id="nameInput" name="name" required />
+
+      <label for="phoneInput">Phone: <span style="color:red">*</span></label>
+      <input type="text" id="phoneInput" name="phone" pattern="^\+?\d{7,15}$" title="Phone number with 7 to 15 digits, optional leading +" required />
+
+      <label for="roleSelect">Role: <span style="color:red">*</span></label>
+<select id="roleSelect" name="role" required>
+  <option value="">Select Role</option>
+  <option value="Incharge">Incharge</option>
+  <option value="Agent">Agent</option>
+</select>
+
+      <label for="passwordInput">Password: <span style="color:red">*</span></label>
+      <input type="password" id="passwordInput" name="password" minlength="6" required />
+
+      <button type="submit">Add Employee</button>
+    </form>
+
+    <button class="back-btn" onclick="goBack()">← Back to Dashboard</button>
+
+    <div id="status"></div>
+  </section>
+
+  <script>
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycbxcjDlSG3PRhSgtqgrcPgd5N47UCeiES5bBU62JCl8EBXUL5n9u58vObxr0bx9rdtI5/exec'; // Replace with your actual Script ID
+    const addEmployeeForm = document.getElementById('addEmployeeForm');
+    const statusEl = document.getElementById('status');
+    const officeSelect = document.getElementById('officeSelect');
+
+    function goBack() {
+      // Adjust this URL to wherever you want to navigate back to
+      window.location.href = 'dashboard.html'; 
+    }
+
+    // Load offices
+    async function loadOffices() {
+      try {
+        const resp = await fetch(webAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'action=getOffices'
+        });
+        const data = await resp.json();
+        if (!data.success) throw new Error('Failed to load offices');
+
+        officeSelect.innerHTML = '<option value="">Select Office</option>';
+        data.offices.forEach(office => {
+          const option = document.createElement('option');
+          option.value = office.id;
+          option.textContent = office.name;
+          officeSelect.appendChild(option);
+        });
+      } catch (e) {
+        statusEl.style.color = '#d8000c';
+        statusEl.textContent = 'Error loading offices.';
+        console.error(e);
+      }
+    }
+
+    loadOffices();
+
+    // Handle form submission
+    addEmployeeForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      statusEl.style.color = '#d8000c';
+      statusEl.textContent = '';
+
+      const formData = new FormData(addEmployeeForm);
+      const data = {
+        action: 'addEmployee',
+        office: formData.get('office'),
+        name: formData.get('name'),
+        phone: formData.get('phone'),
+        role: formData.get('role'),
+        password: formData.get('password')
+      };
+
+      // Validation
+      if (!data.office || !data.name || !data.phone || !data.role || !data.password) {
+        statusEl.textContent = 'Please fill in all required fields.';
+        return;
+      }
+
+      if (data.password.length < 6) {
+        statusEl.textContent = 'Password must be at least 6 characters.';
+        return;
+      }
+
+      statusEl.style.color = '#007bff';
+      statusEl.textContent = 'Adding employee...';
+
+      try {
+        const resp = await fetch(webAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(data)
+        });
+        const result = await resp.json();
+
+        if (result.success) {
+          statusEl.style.color = 'green';
+          statusEl.textContent = 'Employee added successfully.';
+          addEmployeeForm.reset();
+        } else {
+          statusEl.style.color = '#d8000c';
+          statusEl.textContent = result.message || 'Failed to add employee.';
+        }
+      } catch (e) {
+        statusEl.style.color = '#d8000c';
+        statusEl.textContent = 'An error occurred. Please try again.';
+        console.error(e);
+      }
+    });
+  </script>
+
+</body>
+</html>

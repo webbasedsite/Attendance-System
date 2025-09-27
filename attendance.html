@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Attendance - Carrybee Attendance</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body, html {
+      height: 100%;
+      background: #ffffff;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    /* Dropdown 3-dot menu */
+    .menu-wrapper {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .menu-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: #2575fc;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      border-radius: 6px;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .dropdown button {
+      padding: 10px 20px;
+      background: #2575fc;
+      border: none;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: white;
+    }
+
+    .dropdown button:hover {
+      background-color: #f0f0f0;
+      color: #2575fc;
+    }
+
+    .container {
+      background: #f0f4ff;
+      padding: 30px 40px;
+      border-radius: 15px;
+      box-shadow: 0 8px 24px rgba(37,117,252,0.15);
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+      position: relative;
+    }
+
+    header {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+      color: #FFDF00;
+      text-shadow: 0 1px 3px rgba(255, 223, 0, 0.6);
+      border-bottom: 2px solid #FFDF00;
+      padding-bottom: 10px;
+    }
+
+    #welcome {
+      font-size: 1.1rem;
+      margin: 10px 0;
+      color: #2575fc;
+      font-weight: 600;
+    }
+
+    #officeName {
+      font-size: 1rem;
+      color: #2575fc;
+      font-weight: 500;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 14px 12px;
+      margin: 10px 0;
+      border: 1.5px solid #2575fc;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    button {
+      background-color: #2575fc;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      width: 100%;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 6px 18px rgba(37,117,252,0.4);
+      position: relative;
+    }
+
+    button:hover {
+      background-color: #1a54c2;
+    }
+
+    #message {
+      margin-top: 16px;
+      font-weight: 600;
+      min-height: 20px;
+    }
+
+    #downloadCSV {
+      margin-top: 20px;
+      background-color: #33a533;
+      box-shadow: 0 6px 18px rgba(51,165,51,0.5);
+      display: none;
+    }
+
+    #downloadCSV:hover {
+      background-color: #287d28;
+    }
+
+    /* Loader spinner */
+    #loader {
+      border: 4px solid #f3f3f3; /* Light grey */
+      border-top: 4px solid #2575fc; /* Blue */
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      animation: spin 1s linear infinite;
+      display: none;
+      margin: 0 auto;
+      margin-top: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+
+    #infoMessage {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: #2575fc;
+      font-weight: 600;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 3-dot Menu -->
+  <div class="menu-wrapper">
+    <button class="menu-btn" onclick="toggleMenu()">⋮</button>
+    <div class="dropdown" id="dropdownMenu">
+      <button id="viewHistoryOption">📜 View History</button>
+      <button id="inchargeProfileOption" style="display:none;">👤 Incharge Profile</button>
+      <button id="dashboardOption" style="display:none;">📊 Dashboard</button>
+      <button id="addEmployeeOption" style="display:none;">➕ Add Employee</button>
+      <button id="logoutOption" style="display:none;">🚪 Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <header></header>
+    <div id="welcome"></div>
+    <p id="officeName"></p>
+
+    <h2>Mark Attendance</h2>
+    <input type="text" id="employeeId" placeholder="Employee Phone" />
+    <select id="shiftSelect">
+      <option value="Morning">Morning</option>
+      <option value="Evening">Evening</option>
+      <option value="Night">Night</option>
+    </select>
+    <button id="checkInBtn">Check-In</button>
+    <button id="checkOutBtn">Check-Out</button>
+
+    <div id="loader"></div>
+    <div id="message"></div>
+
+    <button id="downloadCSV">Download Agents CSV</button>
+    <div id="infoMessage"></div>
+  </div>
+
+  <script>
+  const webAppUrl = "https://script.google.com/macros/s/AKfycbxcjDlSG3PRhSgtqgrcPgd5N47UCeiES5bBU62JCl8EBXUL5n9u58vObxr0bx9rdtI5/exec";
+
+  function toggleMenu() {
+    const menu = document.getElementById('dropdownMenu');
+    menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+  }
+
+  function showMessage(msg, success = false) {
+    const messageEl = document.getElementById('message');
+    messageEl.style.color = success ? 'green' : 'red';
+    messageEl.textContent = msg;
+  }
+
+  function showInfo(msg) {
+    const infoEl = document.getElementById('infoMessage');
+    infoEl.textContent = msg;
+  }
+
+  function setLoading(isLoading) {
+    const loader = document.getElementById('loader');
+    loader.style.display = isLoading ? 'block' : 'none';
+  }
+
+  // ✅ VALIDATE EMPLOYEE PHONE
+  async function validateAgentPhone(phone) {
+  if (!phone) return false;
+  try {
+    const params = new URLSearchParams({ action: 'getAllEmployees' });
+    const res = await fetch(webAppUrl + "?" + params.toString(), { method: "POST" });
+
+    console.log("API Response status:", res.status);
+    const data = await res.json();
+    console.log("API Response data for getAllEmployees:", data);
+
+    if (data.success && Array.isArray(data.employees)) {
+      const normalizedInput = phone.replace(/\D/g, ''); // Remove all non-digits
+
+      const found = data.employees.some(emp => {
+        const normalizedEmpPhone = (emp.phone || "").toString().replace(/\D/g, '');
+        return normalizedEmpPhone === normalizedInput;
+      });
+
+      console.log(`Phone ${phone} found in employees:`, found);
+      return found;
+    } else {
+      console.warn("API response missing expected fields.");
+      return false;
+    }
+  } catch (e) {
+    console.error("Failed to validate phone:", e);
+    return false;
+  }
+}
+
+
+  // ✅ MARK ATTENDANCE
+  async function markAttendance(action) {
+    showMessage('');
+    setLoading(false);
+
+    const phone = document.getElementById('employeeId').value.trim();
+    const shift = document.getElementById('shiftSelect').value;
+
+    if (!phone) {
+      console.warn("No phone entered");
+      return showMessage("Please enter your Employee Phone or ID");
+    }
+
+    showMessage("Validating phone...");
+    console.log(`Validating phone: ${phone}`);
+
+    const validPhone = await validateAgentPhone(phone);
+    if (!validPhone) {
+      console.warn(`Validation failed for phone: ${phone}`);
+      return showMessage("Invalid Employee Phone or ID. Please check and try again.");
+    }
+
+    if (!navigator.geolocation) return showMessage("Geolocation not supported");
+
+    showMessage("Getting location...");
+    setLoading(true);
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const params = new URLSearchParams({
+        action: action,
+        phone: phone,
+        shift: shift,
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        timestamp: new Date().toISOString()
+      });
+
+      try {
+        const response = await fetch(webAppUrl + "?" + params.toString(), { method: "POST" });
+        const data = await response.json();
+        setLoading(false);
+
+        if (data.success) {
+          showMessage(`${action} successful!`, true);
+        } else {
+          showMessage(data.message || `${action} failed!`);
+        }
+      } catch (e) {
+        setLoading(false);
+        showMessage(`Error: ${e.message || e}`);
+        console.error("Attendance submission error:", e);
+      }
+    }, (error) => {
+      setLoading(false);
+      showMessage("Location permission is required");
+      console.warn("Geolocation error:", error);
+    });
+  }
+
+  // ✅ INIT ON LOAD
+  window.onload = async () => {
+    const role = localStorage.getItem('role') || 'agent';
+    const name = localStorage.getItem('name') || 'User';
+    const hubName = localStorage.getItem('hubName') || 'Unknown Office';
+    const phone = localStorage.getItem('phone') || '';
+    const officeID = localStorage.getItem('officeID') || '';
+
+    document.getElementById('employeeId').value = phone;
+    document.getElementById('employeeId').readOnly = (role !== 'agent');
+    document.getElementById('welcome').textContent = `Welcome ${name}`;
+    document.getElementById('officeName').textContent = `Office: ${hubName}`;
+
+    if (role === 'incharge') {
+      document.getElementById('inchargeProfileOption').style.display = 'block';
+      document.getElementById('logoutOption').style.display = 'block';
+    } else if (role === 'admin') {
+      document.getElementById('dashboardOption').style.display = 'block';
+      document.getElementById('addEmployeeOption').style.display = 'block';
+      document.getElementById('logoutOption').style.display = 'block';
+    }
+
+    if (role !== 'agent') {
+      try {
+        const res = await fetch(webAppUrl + `?action=getAgentsByOffice&officeID=${encodeURIComponent(officeID)}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success && data.agents.length > 0) {
+          document.getElementById('downloadCSV').style.display = 'block';
+          showInfo(`You can download the CSV of agents for office "${hubName}".`);
+        } else {
+          showInfo(`No agents available to download for office "${hubName}".`);
+        }
+      } catch (e) {
+        console.error("CSV fetch failed", e);
+        showInfo("Unable to check CSV eligibility.");
+      }
+    }
+  };
+
+  // ✅ BIND EVENTS
+  document.getElementById('checkInBtn').onclick = () => markAttendance('Check-In');
+  document.getElementById('checkOutBtn').onclick = () => markAttendance('Check-Out');
+
+  document.getElementById('downloadCSV').onclick = async () => {
+    setLoading(true);
+    const officeID = localStorage.getItem('officeID') || '';
+    try {
+      const params = new URLSearchParams({ action: 'getAgentsByOffice', officeID: officeID });
+      const response = await fetch(webAppUrl + "?" + params.toString(), { method: "POST" });
+      const data = await response.json();
+      setLoading(false);
+      if (data.success && data.agents.length > 0) {
+        const headers = ['Name', 'Phone', 'Designation'];
+        const csvRows = [headers.join(',')];
+        data.agents.forEach(agent => {
+          csvRows.push([agent.name, agent.phone, agent.designation].map(field => `"${field}"`).join(','));
+        });
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `agents_${officeID}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showMessage("CSV Downloaded successfully!", true);
+      } else {
+        showMessage("No agents found for this office.");
+      }
+    } catch (e) {
+      setLoading(false);
+      showMessage("Failed to download CSV.");
+      console.error(e);
+    }
+  };
+
+  // Menu navigation handlers
+  document.getElementById('inchargeProfileOption').onclick = () => {
+    window.location.href = 'incharge-profile.html';
+  };
+  document.getElementById('dashboardOption').onclick = () => {
+    window.location.href = 'admin-dashboard.html';
+  };
+  document.getElementById('addEmployeeOption').onclick = () => {
+    window.location.href = 'add_employee.html';
+  };
+  document.getElementById('viewHistoryOption').onclick = () => {
+    alert("View History feature coming soon!");
+  };
+  document.getElementById('logoutOption').onclick = () => {
+    localStorage.clear();
+    window.location.href = 'login.html';
+  };
+
+  // Hide menu if clicked outside
+  window.onclick = function(event) {
+    if (!event.target.matches('.menu-btn')) {
+      const dropdown = document.getElementById('dropdownMenu');
+      if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+      }
+    }
+  };
+</script>

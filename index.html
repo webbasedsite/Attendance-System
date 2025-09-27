@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Role Selection - Carrybee Attendance</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f0f4ff;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    h1 {
+      color: #2575fc;
+      margin-bottom: 40px;
+    }
+
+    .roles {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      background: #2575fc;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 20px 40px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(37,117,252,0.5);
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background: #1a54c2;
+    }
+
+    @media (max-width: 480px) {
+      .roles {
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Carrybee Attendance System</h1>
+  <div class="roles">
+    <button onclick="selectRole('admin')">Admin</button>
+    <button onclick="selectRole('incharge')">Incharge</button>
+    <button onclick="selectRole('agent')">Agent</button>
+  </div>
+
+  <script>
+    function selectRole(role) {
+      localStorage.setItem('role', role);
+
+      // Agent গেলে সরাসরি attendance.html
+      if (role === 'agent') {
+        window.location.href = 'attendance.html';
+      } else {
+        window.location.href = 'login.html';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>incharge Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      background: #f0f4ff;
+      color: #222;
+      padding: 20px;
+    }
+    header {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #2575fc;
+      border-bottom: 3px solid #2575fc;
+      padding-bottom: 12px;
+      margin-bottom: 30px;
+      text-align: center;
+      text-shadow: 0 1px 3px rgba(255, 223, 0, 0.6);
+    }
+    section {
+      max-width: 900px;
+      margin: 0 auto 40px;
+      background: white;
+      padding: 25px 30px;
+      border-radius: 15px;
+      box-shadow: 0 6px 20px rgba(37,117,252,0.15);
+    }
+    h2 {
+      margin-top: 0;
+      color: #2575fc;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: 600;
+      margin-right: 10px;
+      color: #2575fc;
+    }
+    select, input[type="date"] {
+      padding: 7px 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1.5px solid #2575fc;
+      outline: none;
+      margin-right: 15px;
+      min-width: 160px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    select:focus, input[type="date"]:focus {
+      border-color: #1a54c2;
+      box-shadow: 0 0 8px rgba(26,84,194,0.5);
+    }
+    button {
+      background: #2575fc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 25px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(37,117,252,0.5);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    button:hover {
+      background: #1a54c2;
+      box-shadow: 0 6px 18px rgba(26,84,194,0.8);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      font-size: 1rem;
+    }
+    th {
+      background-color: #2575fc;
+      color: white;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+    tbody tr:hover {
+      background-color: #f0f4ff;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: 600;
+      min-height: 1.2em;
+      color: #d8000c;
+      text-align: center;
+      transition: color 0.3s ease;
+    }
+    
+    /* You have two button styles; I unified them here */
+    button.centered {
+      display: block;
+      margin: 20px auto 0 auto;
+      padding: 12px 20px;
+      box-shadow: 0 6px 18px rgba(37,117,252,0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <header>Incharge Dashboard</header>
+
+  <section>
+    <h2>Download Attendance</h2>
+
+    <label for="officeSelect">Select Office:</label>
+    <select id="officeSelect" aria-label="Select Office for Attendance Download">
+      <option value="">Loading offices...</option>
+    </select>
+
+    <label for="startDate">Start Date:</label>
+    <input type="date" id="startDate" aria-label="Start Date" />
+
+    <label for="endDate">End Date:</label>
+    <input type="date" id="endDate" aria-label="End Date" />
+
+    <button id="downloadBtn" aria-label="Download Attendance CSV">Download CSV</button>
+    <div id="status" role="alert" aria-live="polite"></div>
+  </section>
+  
+
+  <section>
+    <h2>Agent List</h2>
+
+    <label for="officeAgentSelect">Select Office:</label>
+    <select id="officeAgentSelect" aria-label="Select Office to View Agents">
+      <option value="">Loading offices...</option>
+    </select>
+
+    <table id="agentsTable" style="display:none;" aria-label="List of Agents">
+      <thead>
+        <tr><th>Name</th><th>Phone</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button class="centered" onclick="goBack()">← Back to Attendance</button>
+  </section>
+
+  <script>
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycbxcjDlSG3PRhSgtqgrcPgd5N47UCeiES5bBU62JCl8EBXUL5n9u58vObxr0bx9rdtI5/exec';
+
+    const officeSelect = document.getElementById('officeSelect');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const statusEl = document.getElementById('status');
+
+    const officeAgentSelect = document.getElementById('officeAgentSelect');
+    const agentsTable = document.getElementById('agentsTable');
+    const agentsTableBody = agentsTable.querySelector('tbody');
+
+    function goBack() {
+      // Change location or do whatever is appropriate for your app
+      window.location.href = 'attendance.html';
+    }
+
+    // Load offices for both selects
+    async function loadOffices() {
+      try {
+        const resp = await fetch(webAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'action=getOffices'
+        });
+        const data = await resp.json();
+        if (!data.success) throw new Error('Failed to load offices');
+
+        // Reset and populate selects
+        officeSelect.innerHTML = '<option value="">Select Office</option>';
+        officeAgentSelect.innerHTML = '<option value="">Select Office</option>';
+
+        data.offices.forEach(({ id, name }) => {
+          const opt1 = document.createElement('option');
+          opt1.value = id;
+          opt1.textContent = name;
+          officeSelect.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = id;
+          opt2.textContent = name;
+          officeAgentSelect.appendChild(opt2);
+        });
+      } catch (err) {
+        console.error('Error in loadOffices:', err);
+        statusEl.textContent = 'Error loading offices.';
+      }
+    }
+
+    loadOffices();
+
+    // Download attendance CSV by date range and office
+    downloadBtn.addEventListener('click', async () => {
+      statusEl.style.color = '#d8000c'; // Default error color
+      statusEl.textContent = '';
+
+      const officeID = officeSelect.value;
+      const start = startDateInput.value;
+      const end = endDateInput.value;
+
+      if (!officeID) {
+        statusEl.textContent = 'Please select an office.';
+        return;
+      }
+      if (!start || !end) {
+        statusEl.textContent = 'Please select both start and end dates.';
+        return;
+      }
+      if (new Date(start) > new Date(end)) {
+        statusEl.textContent = 'Start date must be before end date.';
+        return;
+      }
+
+      statusEl.style.color = '#2575fc';
+      statusEl.textContent = 'Fetching attendance data...';
+
+      try {
+        const resp = await fetch(webAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `action=getAttendanceByDateRange&officeID=${encodeURIComponent(officeID)}&startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`
+        });
+
+        const data = await resp.json();
+
+        if (!data.success || !data.records || data.records.length === 0) {
+          throw new Error(data.message || 'No data found for this range.');
+        }
+
+        // Prepare CSV rows
+        const csvRows = [
+          ['Timestamp', 'Employee Phone', 'Office ID', 'Shift', 'Action', 'Latitude', 'Longitude', 'Status'],
+          ...data.records.map(r => [
+            r.timestamp, r.employeeId, r.officeId, r.shift, r.action, r.latitude, r.longitude, r.status
+          ])
+        ];
+
+        const csvContent = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Attendance_${start}_to_${end}_${officeSelect.options[officeSelect.selectedIndex].text.replace(/\s+/g, '_')}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        statusEl.style.color = 'green';
+        statusEl.textContent = 'CSV download started.';
+      } catch (err) {
+        console.error('Error downloading attendance:', err);
+        statusEl.style.color = '#d8000c';
+        statusEl.textContent = 'Error downloading attendance data.';
+      }
+    });
+
+    // Load agents when office selected
+    officeAgentSelect.addEventListener('change', async () => {
+      const officeID = officeAgentSelect.value;
+      agentsTable.style.display = 'none';
+      agentsTableBody.innerHTML = '';
+      statusEl.textContent = '';
+
+      if (!officeID) return;
+
+      statusEl.style.color = '#2575fc';
+      statusEl.textContent = 'Loading agents...';
+
+      try {
+        const resp = await fetch(webAppUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `action=getAgentsByOffice&officeID=${encodeURIComponent(officeID)}`
+        });
+
+        const data = await resp.json();
+
+        if (!data.success || !data.agents) {
+          throw new Error(data.message || 'No agents found.');
+        }
+
+        data.agents.forEach(agent => {
+          const tr = document.createElement('tr');
+          const tdName = document.createElement('td');
+          const tdPhone = document.createElement('td');
+
+          tdName.textContent = agent.name;
+          tdPhone.textContent = agent.phone;
+
+          tr.appendChild(tdName);
+          tr.appendChild(tdPhone);
+          agentsTableBody.appendChild(tr);
+        });
+
+        agentsTable.style.display = 'table';
+        statusEl.textContent = '';
+      } catch (err) {
+        console.error('Error loading agents:', err);
+        statusEl.style.color = '#d8000c';
+        statusEl.textContent = 'Error loading agents.';
+      }
+    });
+  </script>
+
+</body>
+</html>
